@@ -49,7 +49,7 @@ class Source(object):
     self._ScanSource()
 
   def __str__(self):
-    return 'Source %s' % self._path
+    return 'Source {0!s}'.format(self._path)
 
   def GetSource(self):
     """Get the source as a string."""
