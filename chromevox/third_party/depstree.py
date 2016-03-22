@@ -155,8 +155,8 @@ class CircularDependencyError(BaseDepsTreeError):
     self._dependency_list = dependency_list
 
   def __str__(self):
-    return ('Encountered circular dependency:\n%s\n' %
-            '\n'.join(self._dependency_list))
+    return ('Encountered circular dependency:\n{0!s}\n'.format(
+            '\n'.join(self._dependency_list)))
 
 
 class MultipleProvideError(BaseDepsTreeError):
@@ -170,8 +170,7 @@ class MultipleProvideError(BaseDepsTreeError):
   def __str__(self):
     source_strs = map(str, self._sources)
 
-    return ('Namespace "%s" provided more than once in sources:\n%s\n' %
-            (self._namespace, '\n'.join(source_strs)))
+    return ('Namespace "{0!s}" provided more than once in sources:\n{1!s}\n'.format(self._namespace, '\n'.join(source_strs)))
 
 
 class NamespaceNotFoundError(BaseDepsTreeError):
@@ -183,7 +182,7 @@ class NamespaceNotFoundError(BaseDepsTreeError):
     self._source = source
 
   def __str__(self):
-    msg = 'Namespace "%s" never provided.' % self._namespace
+    msg = 'Namespace "{0!s}" never provided.'.format(self._namespace)
     if self._source:
-      msg += ' Required in %s' % self._source
+      msg += ' Required in {0!s}'.format(self._source)
     return msg

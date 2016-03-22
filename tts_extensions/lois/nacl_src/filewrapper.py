@@ -68,19 +68,19 @@ def WriteHeader(filename, base):
   """
   hdr = open(filename, "w")
   hdr.write("""\
-%(comment)s\
-//  Output: %(filename)s
+{comment!s}\
+//  Output: {filename!s}
 
-%(file_toc)s
+{file_toc!s}
 
-#ifndef __STRUCT_FILE_TOC_%(base)s_
-#define __STRUCT_FILE_TOC_%(base)s_
+#ifndef __STRUCT_FILE_TOC_{base!s}_
+#define __STRUCT_FILE_TOC_{base!s}_
 
-extern const struct FileToc* %(base)s_create();
+extern const struct FileToc* {base!s}_create();
 
-#endif // __STRUCT_FILE_TOC_%(base)s_
-""" % {"comment": toc_comment, "base": base,
-       "filename": filename, "file_toc": file_toc})
+#endif // __STRUCT_FILE_TOC_{base!s}_
+""".format(**{"comment": toc_comment, "base": base,
+       "filename": filename, "file_toc": file_toc}))
   hdr.close()
 
 
@@ -95,34 +95,33 @@ def WriteCpp(filename, base, externs, initializers):
   """
   toc = open(filename, "w")
   toc.write("""\
-%(comment)s\
-//  Output: %(filename)s
+{comment!s}\
+//  Output: {filename!s}
 
-#include "%(hdr)s.h"
+#include "{hdr!s}.h"
 
-""" % {"filename": filename, "comment": toc_comment,
-       "hdr": os.path.join(opts["include_path"], base)})
+""".format(**{"filename": filename, "comment": toc_comment,
+       "hdr": os.path.join(opts["include_path"], base)}))
 
   toc.write("\n".join(externs))
   toc.write("""
 
-static const struct FileToc toc[%(size)d] = {
-""" % {"size": len(initializers)+1})
+static const struct FileToc toc[{size:d}] = {{
+""".format(**{"size": len(initializers)+1}))
 
   for (filedata, sym, size) in initializers:
     if size != 0:
-      toc.write("  { \"%s\", &%s_start, %d },\n" %
-                (filedata, sym, size))
+      toc.write("  {{ \"{0!s}\", &{1!s}_start, {2:d} }},\n".format(filedata, sym, size))
     else:
-      toc.write("  { \"%s\", \"\", 0 },\n" % filedata)
+      toc.write("  {{ \"{0!s}\", \"\", 0 }},\n".format(filedata))
   toc.write("""\
-  { (const char*) 0, (const char*) 0, 0 }
-};
+  {{ (const char*) 0, (const char*) 0, 0 }}
+}};
 
-const struct FileToc* %(base)s_create() {
+const struct FileToc* {base!s}_create() {{
   return toc;
-}
-""" % {"base": base})
+}}
+""".format(**{"base": base}))
 
   toc.close()
 
@@ -159,7 +158,7 @@ def EncapsulateFiles(infiles, result):
   # runs, and insensitive to the absolute locations of source or output
   # files.  So we name the tempdir based on the (presumed relative)
   # output filename.
-  tmpdir = "%s.tmpdir.filewrapper" % result
+  tmpdir = "{0!s}.tmpdir.filewrapper".format(result)
   if not os.path.isdir(tmpdir):
     try:
       if os.path.exists(tmpdir):
@@ -167,8 +166,7 @@ def EncapsulateFiles(infiles, result):
       os.mkdir(tmpdir)
     except OSError, e:
       print >>sys.stderr, (
-          "filewrapper: failed to create output directory '%s': %s." %
-          (tmpdir, str(e)))
+          "filewrapper: failed to create output directory '{0!s}': {1!s}.".format(tmpdir, str(e)))
       sys.exit(1)
 
   try:
@@ -180,9 +178,9 @@ def EncapsulateFiles(infiles, result):
     # ensure that the prefix ends, but does not start, with a slash.
     # This allows both "//third_party/some/path" and "subdir/" to work.
     for filename in infiles:
-      filecopy = os.path.join(tmpdir, "s%d" % seq)
+      filecopy = os.path.join(tmpdir, "s{0:d}".format(seq))
       symbol = symbol_filter.sub("_", "_binary_" + filecopy)
-      obj = os.path.join(tmpdir, "f%d.o" % seq)
+      obj = os.path.join(tmpdir, "f{0:d}.o".format(seq))
       size = os.stat(filename).st_size
 
       # NOTE(johnfish): objcopy >2.13 disallows empty files
@@ -199,8 +197,7 @@ def EncapsulateFiles(infiles, result):
         f_in.close()
         f_out.close()
 
-        if (0 != os.system("%s %s %s %s" %
-                           (opts["objcopy"],
+        if (0 != os.system("{0!s} {1!s} {2!s} {3!s}".format(opts["objcopy"],
                             opts["objcopy_opts"], filecopy, obj))):
           print >>sys.stderr, "filewrapper: objcopy failed"
           sys.exit(1)
@@ -211,16 +208,15 @@ def EncapsulateFiles(infiles, result):
           if file.startswith(prefix):
             filename = filename[len(prefix):]
       initializers.append((filename, symbol, size))
-      externs.append("extern const char %s_start;" % symbol)
+      externs.append("extern const char {0!s}_start;".format(symbol))
       seq += 1
 
     # Link all of the wrapped objects together.
-    print "%s %s -r -o %s %s" % (
+    print "{0!s} {1!s} -r -o {2!s} {3!s}".format(
         opts["ld"], opts["ldopts"],
         result, " ".join(objfiles))
 
-    if (0 != os.system("%s %s -r -o %s %s" %
-                       (opts["ld"], opts["ldopts"],
+    if (0 != os.system("{0!s} {1!s} -r -o {2!s} {3!s}".format(opts["ld"], opts["ldopts"],
                         result, " ".join(objfiles)))):
       print >>sys.stderr, "filewrapper: ld failed"
       sys.exit(1)
@@ -232,9 +228,9 @@ def EncapsulateFiles(infiles, result):
 
 
 def Usage():
-  print "Usage: %s [options] name files..." % sys.argv[0]
+  print "Usage: {0!s} [options] name files...".format(sys.argv[0])
   for (name, default_value, help_str) in opt_list:
-    print "  --%s=\"%s\": %s" % (name, default_value, help_str)
+    print "  --{0!s}=\"{1!s}\": {2!s}".format(name, default_value, help_str)
 
 
 def main():
@@ -249,7 +245,7 @@ def main():
 
     m = re.match("--?([a-z_]+)=(.*)", arg)
     if m:
-      print "Match %s" % arg
+      print "Match {0!s}".format(arg)
       (key, value) = (m.group(1), m.group(2))
       if key == "help" or key not in opts:
         Usage()
@@ -261,7 +257,7 @@ def main():
       if m:
         lastkey = m.group(1)
         continue
-      print "Append %s" % arg
+      print "Append {0!s}".format(arg)
       argv.append(arg)
 
   if len(argv) < 3:
@@ -299,7 +295,7 @@ def main():
 
   global toc_comment
   toc_comment = "//  Automatically generated by filewrapper\n"
-  toc_comment += "//    %s\n" % base
+  toc_comment += "//    {0!s}\n".format(base)
 
   WriteHeader(hdr_name, base)
 
